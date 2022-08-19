@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, flash, jsonify
+from flask import Flask, request, render_template, redirect, flash, jsonify, session
 from flask_debugtoolbar import DebugToolbarExtension
 import surveys
 
@@ -9,7 +9,7 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 debug = DebugToolbarExtension(app)
 
 # fake database
-responses = []
+#responses = []
 
 @app.route("/")
 def home_page():
@@ -24,6 +24,7 @@ def thank_you_page():
 
 @app.route("/questions/<num>")
 def questions_page(num):
+    responses = session.get("responses")
     if int(num) != len(responses):
         flash("Naughty!  Naughty!  You tried to go where you weren't supposed to!")
         return redirect(f"/questions/{len(responses)}")
@@ -35,10 +36,17 @@ def questions_page(num):
 
 @app.route("/answer", methods=["POST"])
 def answer():
+    responses = session.get("responses")
     answer = request.form["answer"]
     responses.append(answer)
+    session["responses"] = responses
 
     if len(responses) < len(surveys.satisfaction_survey.questions):
         return redirect(f"/questions/{len(responses)}")
     else:
         return redirect("/thankyou")
+
+@app.route("/start", methods=["POST"])
+def init_survey():
+    session["responses"] = []
+    return redirect(f"/questions/{len(session['responses'])}")
